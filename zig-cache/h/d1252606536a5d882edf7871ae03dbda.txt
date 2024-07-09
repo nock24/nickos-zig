@@ -1,2 +1,0 @@
-0
-595 13379548 1718567813347540162 95ccd5c883af83aa2d930865c2ca29f8 0 /home/nick/dev/nickos-zig/src/boot.S
