@@ -1,11 +1,11 @@
-pub const BASE: u32 = 0xfe21_5000;
+pub const BASE: u32 = 0x3f21_5000;
 
 pub const REGISTERS: *volatile Registers = @ptrFromInt(BASE);
 
 pub const Registers = extern struct {
     irq_status: u32,
     enables: u32,
-    reserved: [14]u32,
+    _: [14]u32,
     mu_io: u32,
     mu_ier: u32,
     mu_iir: u32,

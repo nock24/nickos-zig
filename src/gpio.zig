@@ -1,11 +1,11 @@
 const time = @import("time.zig");
 
-pub const BASE: u32 = 0xfe20_0000;
+pub const BASE: u32 = 0x3f00_0000;
 
 pub const REGISTERS: *volatile Registers = @ptrFromInt(BASE);
 
 pub const PinData = extern struct {
-    reserved: u32,
+    _: u32,
     data: [2]u32,
 };
 
@@ -21,7 +21,7 @@ pub const Registers = extern struct {
     lo_detect_enable: PinData,
     async_re_detect: PinData,
     async_fe_detect: PinData,
-    reserved: u32,
+    _: u32,
     pupd_enable: u32,
     pupd_enable_clocks: [2]u32,
 };

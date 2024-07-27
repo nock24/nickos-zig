@@ -16,7 +16,7 @@ pub fn init() void {
     aux.REGISTERS.mu_ier = 0;
     aux.REGISTERS.mu_lcr = 3;
     aux.REGISTERS.mu_mcr = 0;
-    aux.REGISTERS.mu_baud_rate = 541;
+    aux.REGISTERS.mu_baud_rate = 240;
     aux.REGISTERS.mu_control = 3;
 }
 
@@ -26,7 +26,7 @@ pub fn send_char(c: u8) void {
     aux.REGISTERS.mu_io = c;
 }
 
-pub fn recv_char() u8 {
+pub fn receive_char() u8 {
     while (aux.REGISTERS.mu_lsr & 1 == 0) {}
 
     return @intCast(aux.REGISTERS.mu_io & 0xFF);
