@@ -14,8 +14,8 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     exe.linker_script = b.path("linker.ld");
-    exe.addAssemblyFile(b.path("src/boot.S"));
-    exe.addAssemblyFile(b.path("src/utils.S"));
+    exe.addAssemblyFile(b.path("src/asm/boot.S"));
+    exe.addAssemblyFile(b.path("src/asm/utils.S"));
     b.installArtifact(exe);
 
     const run_objcopy = b.addSystemCommand(&.{

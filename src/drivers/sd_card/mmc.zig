@@ -1,0 +1,95 @@
+pub const MmcConfig align(4) = extern struct {
+    name: []const u8,
+    host_caps: u32,
+    voltages: u32,
+    f_min: u32,
+    f_max: u32,
+    b_max: u32,
+    part_type: u8,
+};
+
+pub const MmcCmd align(4) = extern struct {
+    idx: u16,
+    response_type: u32,
+    arg: u32,
+    response: [4]u32,
+};
+
+pub const MmcData align(4) = extern struct {
+    buffer: union {
+        dest: [*]u8,
+        src: [*]const u8,
+    },
+    flags: u32,
+    blocks: u32,
+    block_size: u32,
+};
+
+pub const BusMode = enum {
+    mmc_legacy,
+    sd_legacy,
+    mmc_hs,
+    sd_hc,
+    mmc_hs_52,
+    mmc_ddr_52,
+    uhs_sdr12,
+    uhs_sdr25,
+    uhs_sdr50,
+    uhs_ddr50,
+    uhs_sdr104,
+    mmc_hs_200,
+    mmc_hs_400,
+    mmc_hs_400_es,
+    mmc_modes_end,
+};
+
+pub const MmcVoltage = enum(u2) {
+    _0 = 0,
+    _120 = 1,
+    _180 = 2,
+    _330 = 4,
+};
+
+pub const Mmc align(4) = extern struct {
+    config: MmcConfig,
+    version: u32,
+    has_init: u32,
+    high_capacity: u32,
+    clock_disable: bool,
+    bus_width: u32,
+    clock: u32,
+    signal_voltage: MmcVoltage,
+    card_caps: u32,
+    host_caps: u32,
+    ocr: u32,
+    dsr: u32,
+    dsr_imp: u32,
+    scr: [2]u32,
+    csd: [4]u32,
+    cid: [4]u32,
+    rca: u16,
+    part_support: u8,
+    part_attr: u8,
+    wr_rel_set: u8,
+    part_config: u8,
+    gen_cmd6_time: u8,
+    part_switch_time: u8,
+    tran_speed: u32,
+    legacy_speed: u32,
+    read_bl_len: u32,
+    capacity: u64,
+    capacity_user: u64,
+    capacity_boot: u64,
+    capacity_rpmb: u64,
+    capacity_gp: [4]u64,
+    op_cond_pending: u8,
+    init_in_progress: u8,
+    preinit: u8,
+    ddr_mode: u32,
+    ext_csd: [*]u8,
+    card_type: u32,
+    current_voltage: MmcVoltage,
+    selected_mode: BusMode,
+    best_mode: BusMode,
+    quirks: u32,
+};

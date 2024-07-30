@@ -188,23 +188,32 @@ const TagClockId = enum(u4) {
 pub const Property = struct {
     tag: u32,
     byte_length: u32,
-    data: union {
-        value_32: u32,
-        buffer_8: [256]u8,
-        buffer_32: [64]u32,
-    },
+    data_buffer: [256]u8,
+
+    pub fn data(self: *Property, ItemType: type) []ItemType {
+        if (ItemType != u32 and ItemType != u8) @compileError("invalid data item type");
+        return self.data_buffer[0..self.byte_length];
+    }
 };
 
 property_tags: [8192]u32 align(16),
 pt_index: usize = 0,
 
-pub fn propertyInit() void {
-    var property_tags = [_]u32{0} ** 8192;
+pub fn init() Mailbox {
+    var property_tags: [8192]u32 align(16) = undefined;
+    for (&property_tags) |*property_tag| {
+        property_tag.* = 0;
+    }
     property_tags[BufferOffset.osize] = 12;
     property_tags[BufferOffset.orequest_or_response] = 0;
 
     const pt_index: usize = 2;
     property_tags[pt_index] = 0;
+
+    return .{
+        .property_tags = property_tags,
+        .pt_index = pt_index,
+    };
 }
 
 fn ptPush(self: *Mailbox, value: u32) void {
@@ -212,17 +221,12 @@ fn ptPush(self: *Mailbox, value: u32) void {
     self.pt_index += 1;
 }
 
-pub fn propertyAddTag(self: *Mailbox, comptime tag: Tag, data: anytype) void {
-    const data_type_info = @typeInfo(@TypeOf(data));
-    if (data_type_info != .Array or
-        data_type_info.Array.child != u32) @compileError("expected data u32 array");
-    const data_len: usize = data_type_info.Array.len;
-
-    const DataAssert = struct {
-        pub inline fn len(expected_len: usize) void {
-            if (data_len != expected_len) @compileError("incorrect data array length");
+pub fn addProperty(self: *Mailbox, comptime tag: Tag, data: []u32) void {
+    const dataAssertLen = struct {
+        pub inline fn dataAssertLen(expected_len: usize) void {
+            if (data.len != expected_len) @compileError("incorrect data array length");
         }
-    };
+    }.dataAssertLen;
 
     self.ptPush(@intFromEnum(tag));
 
@@ -256,7 +260,7 @@ pub fn propertyAddTag(self: *Mailbox, comptime tag: Tag, data: anytype) void {
             self.ptPush(8);
             self.ptPush(0);
 
-            DataAssert.len(1);
+            dataAssertLen(1);
             self.ptPush(data[0]);
             self.ptPush(0);
         },
@@ -264,7 +268,7 @@ pub fn propertyAddTag(self: *Mailbox, comptime tag: Tag, data: anytype) void {
             self.ptPush(12);
             self.ptPush(0);
 
-            DataAssert.len(3);
+            dataAssertLen(3);
             self.ptPush(data[0]);
             self.ptPush(data[1]);
             self.ptPush(data[2]);
@@ -278,7 +282,7 @@ pub fn propertyAddTag(self: *Mailbox, comptime tag: Tag, data: anytype) void {
             self.ptPush(8);
             self.ptPush(0);
 
-            DataAssert.len(2);
+            dataAssertLen(2);
             self.ptPush(data[0]); // width
             self.ptPush(data[1]); // height
         },
@@ -297,7 +301,7 @@ pub fn propertyAddTag(self: *Mailbox, comptime tag: Tag, data: anytype) void {
             self.ptPush(4);
             self.ptPush(0);
 
-            DataAssert.len(1);
+            dataAssertLen(1);
             self.ptPush(data[0]); // colour depth, bits per pixel, pixel order state
         },
         .get_depth,
@@ -313,7 +317,7 @@ pub fn propertyAddTag(self: *Mailbox, comptime tag: Tag, data: anytype) void {
             self.ptPush(16);
             self.ptPush(0);
 
-            DataAssert.len(4);
+            dataAssertLen(4);
             self.ptPush(data[0]); // top pixels
             self.ptPush(data[1]); // bottom pixels
             self.ptPush(data[2]); // left pixels
@@ -328,7 +332,7 @@ pub fn propertyAddTag(self: *Mailbox, comptime tag: Tag, data: anytype) void {
             self.ptPush(8);
             self.ptPush(0);
 
-            DataAssert.len(2);
+            dataAssertLen(2);
             self.ptPush(data[0]); // device id
             self.ptPush(data[1]); // state
         },
@@ -336,14 +340,14 @@ pub fn propertyAddTag(self: *Mailbox, comptime tag: Tag, data: anytype) void {
             self.ptPush(4);
             self.ptPush(0);
 
-            DataAssert.len(1);
+            dataAssertLen(1);
             self.ptPush(data[0]); // if 0 turn off qpu else enable qpu
         },
         .execute_qpu => {
             self.ptPush(16);
             self.ptPush(0);
 
-            DataAssert.len(4);
+            dataAssertLen(4);
             self.ptPush(data[0]); // jobs
             self.ptPush(data[1]); // pointer to buffer, 24 words of 32 bits
             self.ptPush(data[2]); // no flush
@@ -353,7 +357,7 @@ pub fn propertyAddTag(self: *Mailbox, comptime tag: Tag, data: anytype) void {
             self.ptPush(12);
             self.ptPush(0);
 
-            DataAssert.len(3);
+            dataAssertLen(3);
             self.ptPush(data[0]); // size
             self.ptPush(data[1]); // alignment
             self.ptPush(data[2]); // flags
@@ -365,14 +369,14 @@ pub fn propertyAddTag(self: *Mailbox, comptime tag: Tag, data: anytype) void {
             self.ptPush(4);
             self.ptPush(0);
 
-            DataAssert.len(1);
+            dataAssertLen(1);
             self.ptPush(data[0]); // handle
         },
         .execute_code => {
             self.ptPush(28);
             self.ptPush(0);
 
-            DataAssert.len(7);
+            dataAssertLen(7);
             self.ptPush(data[0]); // function pointer
             self.ptPush(data[1]); // r0
             self.ptPush(data[2]); // r1
@@ -391,7 +395,7 @@ pub fn propertyAddTag(self: *Mailbox, comptime tag: Tag, data: anytype) void {
     self.property_tags[self.pt_index] = 0;
 }
 
-pub fn propertyProcess(self: *Mailbox) u32 {
+pub fn processProperty(self: *Mailbox) u32 {
     // fill inthe size of the buffer
     self.property_tags[BufferOffset.osize] = (self.pt_index + 1) << 2;
     self.property_tags[BufferOffset.orequest_or_response] = 0;
@@ -400,15 +404,28 @@ pub fn propertyProcess(self: *Mailbox) u32 {
     return self.read(.tags_arm_to_vc);
 }
 
-pub fn getProperty(self: *Mailbox, tag: Tag) *Property {
-    var tag_buffer: ?[*]u32 = null;
+pub fn getProperty(self: *Mailbox, tag: Tag) ?Property {
+    var tag_buffer_option: ?[*]u32 = null;
 
     var index: usize = 2;
     while (index < self.property_tags[BufferOffset.osize] >> 2) : (index += (self.property_tags[index + 1] >> 2) + 3) {
         if (self.property_tags[index] == @intFromEnum(tag)) {
-            tag_buffer = &self.property_tags[index];
+            tag_buffer_option = &self.property_tags[index];
         }
     }
 
-    //TODO
+    const tag_buffer = tag_buffer_option orelse return null;
+    const byte_length = tag_buffer[TagOffset.oresponse] & 0xffff;
+    const start = TagOffset.ovalue;
+    const end = start + byte_length;
+    const tag_byte_buffer: []u8 = @as([*]u8, tag_buffer)[start..end];
+
+    var data_buffer: [256]u8 = undefined;
+    @memcpy(&data_buffer, tag_byte_buffer);
+
+    return .{
+        .tag = tag,
+        .byte_length = byte_length,
+        .data_buffer = data_buffer,
+    };
 }
