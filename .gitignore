@@ -3,3 +3,4 @@
 /build
 /armstub/build
 /.zig-cache
+/disk.img

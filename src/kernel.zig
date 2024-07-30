@@ -1,21 +1,18 @@
-const StackTrace = @import("std").builtin.StackTrace;
-const builtin = @import("builtin");
-const mini_uart = @import("mini_uart.zig");
-const printf = @import("printf.zig").printf;
+const std = @import("std");
+const builtin = std.builtin;
+const serial = @import("serial.zig");
 
 export fn kernel_main() noreturn {
-    mini_uart.init();
-    mini_uart.send_str("NickOS kernel initializing...\n");
-    mini_uart.send_str("\tBoard: PI 4");
+    serial.init();
+    serial.printf("NickOS kernel initializing...\n", .{});
 
     while (true) {
-        const c = mini_uart.receive_char();
-        mini_uart.send_char(c);
+        const c = serial.readByte();
+        serial.writeByte(c);
     }
 }
 
-pub fn panic(msg: []const u8, _: ?*StackTrace, _: ?usize) noreturn {
-    mini_uart.send_str("panic: ");
-    mini_uart.send_str(msg);
+pub fn panic(msg: []const u8, _: ?*builtin.StackTrace, _: ?usize) noreturn {
+    serial.printf("\n[KERNEL PANIC]: {}", .{msg});
     while (true) {}
 }

@@ -1,5 +1,6 @@
-pub const BASE: u32 = 0x3f21_5000;
+const peripherals = @import("peripherals.zig");
 
+pub const BASE = peripherals.BASE + 0x0021_5000;
 pub const REGISTERS: *volatile Registers = @ptrFromInt(BASE);
 
 pub const Registers = extern struct {

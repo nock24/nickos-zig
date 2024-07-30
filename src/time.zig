@@ -1,4 +1,6 @@
-pub const BASE: u32 = 0xfe00_3000;
+const peripherals = @import("peripherals.zig");
+
+const BASE = peripherals.BASE + 0x3000;
 
 pub fn getSysTime() u32 {
     const sys_time: *volatile u32 = @ptrFromInt(BASE + 0x4);
@@ -10,4 +12,4 @@ pub fn sleep(ms: u32) void {
     while (getSysTime() - start_time < ms) {}
 }
 
-pub extern fn delay(ticks: u64) void;
+pub extern fn delay(cycles: u64) void;
