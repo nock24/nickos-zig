@@ -1,8 +1,9 @@
 const std = @import("std");
 const math = std.math;
 const meta = std.meta;
+const kernel = @import("kernel");
+const aux = kernel.aux;
 const gpio = @import("gpio.zig");
-const aux = @import("aux.zig");
 
 const TXD: u8 = 14;
 const RXD: u8 = 15;

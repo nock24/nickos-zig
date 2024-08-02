@@ -1,5 +1,6 @@
-const peripherals = @import("peripherals.zig");
-const time = @import("time.zig");
+const kernel = @import("kernel");
+const peripherals = kernel.peripherals;
+const time = kernel.time;
 
 pub const BASE = peripherals.BASE;
 pub const REGISTERS: *volatile Registers = @ptrFromInt(BASE);

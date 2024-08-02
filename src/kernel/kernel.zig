@@ -1,6 +1,7 @@
 const std = @import("std");
 const builtin = std.builtin;
-const serial = @import("serial.zig");
+const drivers = @import("drivers");
+const serial = drivers.serial;
 
 export fn kernel_main() noreturn {
     serial.init();
