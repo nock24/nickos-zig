@@ -2,7 +2,7 @@ const kernel = @import("kernel");
 const peripherals = kernel.peripherals;
 const time = kernel.time;
 
-pub const BASE = peripherals.BASE;
+pub const BASE = peripherals.BASE + 0x0020_0000;
 pub const REGISTERS: *volatile Registers = @ptrFromInt(BASE);
 
 pub const PinData = extern struct {

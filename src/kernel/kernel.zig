@@ -2,15 +2,13 @@ const std = @import("std");
 const builtin = std.builtin;
 const drivers = @import("drivers");
 const serial = drivers.serial;
+const shell = @import("shell.zig");
 
 export fn kernel_main() noreturn {
     serial.init();
-    serial.printf("NickOS kernel initializing...\n", .{});
+    serial.writeStr("\n\nNickOS kernel initializing...\n");
 
-    while (true) {
-        const c = serial.readByte();
-        serial.writeByte(c);
-    }
+    shell.start();
 }
 
 pub fn panic(msg: []const u8, _: ?*builtin.StackTrace, _: ?usize) noreturn {

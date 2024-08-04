@@ -40,8 +40,9 @@ pub fn readByte() u8 {
 }
 
 pub fn writeStr(str: []const u8) void {
-    for (str) |c| {
-        writeByte(c);
+    for (str) |char| {
+        if (char == '\n') writeByte('\r');
+        writeByte(char);
     }
 }
 
@@ -49,14 +50,13 @@ fn printInt(int: anytype) void {
     if (@typeInfo(@TypeOf(int)) != .Int)
         @compileError(@typeName(@TypeOf(int)) ++ " is not an integer");
     const max_digit_cnt: usize = @ceil(@log10(@as(f32, math.maxInt(@TypeOf(int)))));
+
     var buf: [max_digit_cnt]u8 = undefined;
-    for (&buf) |*byte| {
-        byte.* = '0';
-    }
-    var tmp = int;
+    @memset(&buf, 0);
 
     const digit_cnt: usize = @intFromFloat(@ceil(@log10(@as(f32, @floatFromInt(int)))));
     var i = digit_cnt - 1;
+    var tmp = int;
     while (true) : (i -= 1) {
         buf[i] = @as(u8, @intCast(tmp % 10)) + '0';
         tmp /= 10;
@@ -89,6 +89,7 @@ pub fn printf(comptime fmt: []const u8, args: anytype) void {
 
         if (fmt_char == '}') @compileError("no start to placeholder");
         if (fmt_char != '{') {
+            if (fmt_char == '\n') writeByte('\r');
             writeByte(fmt_char);
             fmt_idx += 1;
             continue;
@@ -104,9 +105,31 @@ pub fn printf(comptime fmt: []const u8, args: anytype) void {
         else {
             if (isString(@TypeOf(arg)))
                 writeStr(arg)
+            else if (@TypeOf(arg) == u8)
+                writeByte(arg)
             else
                 printInt(arg);
         }
         arg_idx += 1;
     }
+}
+
+pub const MAX_INPUT_LEN: usize = 256;
+
+pub fn readLine() []const u8 {
+    var input_buf: [MAX_INPUT_LEN]u8 = undefined;
+    @memset(&input_buf, 0);
+
+    var i: usize = 0;
+    while (i < MAX_INPUT_LEN) : (i += 1) {
+        const char = readByte();
+        if (char == '\r') {
+            writeStr("\n");
+            break;
+        }
+        writeByte(char);
+        input_buf[i] = char;
+    }
+
+    return input_buf[0..i];
 }

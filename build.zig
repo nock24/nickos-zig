@@ -5,6 +5,7 @@ pub fn build(b: *std.Build) void {
         .os_tag = .freestanding,
         .cpu_arch = .aarch64,
     });
+
     const optimize = b.standardOptimizeOption(.{});
 
     const exe = b.addExecutable(.{
@@ -31,7 +32,6 @@ pub fn build(b: *std.Build) void {
     exe.linker_script = b.path("linker.ld");
     exe.addAssemblyFile(b.path("src/asm/boot.S"));
     exe.addAssemblyFile(b.path("src/asm/utils.S"));
-    exe.addAssemblyFile(b.path("src/asm/irq.S"));
 
     b.installArtifact(exe);
 
@@ -42,6 +42,21 @@ pub fn build(b: *std.Build) void {
     });
     run_objcopy.step.dependOn(&exe.step);
     b.default_step.dependOn(&run_objcopy.step);
+
+    const flash = b.step("flash", "Flash the kernel onto sd card");
+    const mount_sdcard = b.addSystemCommand(&.{
+        "sudo", "mount", "/dev/sdb1", "/media/rpi_boot",
+    });
+    const eject_sdcard = b.addSystemCommand(&.{
+        "sudo", "eject", "/dev/sdb",
+    });
+    const flash_sdcard = b.addSystemCommand(&.{
+        "sudo", "cp", "./build/kernel.img", "/media/rpi_boot",
+    });
+    flash_sdcard.step.dependOn(&mount_sdcard.step);
+    flash_sdcard.step.dependOn(b.getInstallStep());
+    eject_sdcard.step.dependOn(&flash_sdcard.step);
+    flash.dependOn(&eject_sdcard.step);
 
     const qemu = b.step("qemu", "Run the OS in qemu");
     const run_qemu = b.addSystemCommand(&.{
@@ -59,6 +74,6 @@ pub fn build(b: *std.Build) void {
         "-serial",
         "stdio",
     });
-    qemu.dependOn(&run_qemu.step);
     run_qemu.step.dependOn(b.getInstallStep());
+    qemu.dependOn(&run_qemu.step);
 }

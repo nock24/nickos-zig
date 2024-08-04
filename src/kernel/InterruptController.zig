@@ -78,8 +78,6 @@ pub const Irq = enum(u32) {
     sdhost = 56,
 };
 
-extern fn _enable_interrupts() void;
-
 inline fn interruptsEnabled() u32 {
     var res: u32 = undefined;
     asm volatile ("mrs %[res], CPSR"
@@ -112,8 +110,6 @@ handlers: [IRQ_CNT]?InterruptHandlerFn,
 clearers: [IRQ_CNT]?InterruptHandlerFn,
 
 pub fn init() InterruptController {
-    _enable_interrupts();
-
     disableInterrupts();
     REGISTERS.disable_basic = 0xffff_ffff;
     REGISTERS.disable1 = 0xffff_ffff;
