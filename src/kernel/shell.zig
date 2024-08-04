@@ -18,7 +18,6 @@ const ArgParseError = error{
 
 fn parseCmdArgs(str: []const u8, arg_cnt: usize) ArgParseError![]const []const u8 {
     if (arg_cnt > MAX_ARG_CNT) return ArgParseError.TooLargeArgCnt;
-    if (arg_cnt == 0) return &.{};
 
     var args: [MAX_ARG_CNT][]const u8 = undefined;
     for (&args) |*arg| {
@@ -53,9 +52,15 @@ fn parseCmd(str: []const u8) CmdParseError!Command {
     var cmd_name_buf: [MAX_CMD_NAME_LEN]u8 = undefined;
     @memset(&cmd_name_buf, 0);
     var cmd_name_len: usize = undefined;
-
+    var no_args: bool = undefined;
     for (str, 0..) |char, i| {
-        if (char == ' ' or i == str.len - 1) { // end of command
+        if (char == ' ') {
+            no_args = false;
+            cmd_name_len = i;
+            break;
+        }
+        if (i == str.len - 1) { // end of command
+            no_args = true;
             cmd_name_len = i;
             break;
         }
@@ -65,11 +70,13 @@ fn parseCmd(str: []const u8) CmdParseError!Command {
     }
 
     const cmd_name = cmd_name_buf[0..cmd_name_len];
-    const args_str = str[cmd_name_len + 1 ..];
+    const args_str = if (no_args)
+        ""
+    else
+        str[cmd_name_len + 1 ..];
 
     return if (mem.eql(u8, cmd_name, "os-info")) blk: {
-        _ = parseCmdArgs(args_str, 0) catch
-            return CmdParseError.IncorrectArgs;
+        if (args_str.len != 0) return CmdParseError.IncorrectArgs;
         break :blk .os_info;
     } else if (mem.eql(u8, cmd_name, "echo")) blk: {
         const args = parseCmdArgs(args_str, 1) catch
