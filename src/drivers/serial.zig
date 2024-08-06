@@ -114,22 +114,24 @@ pub fn printf(comptime fmt: []const u8, args: anytype) void {
     }
 }
 
-pub const MAX_INPUT_LEN: usize = 256;
-
-pub fn readLine() []const u8 {
-    var input_buf: [MAX_INPUT_LEN]u8 = undefined;
-    @memset(&input_buf, 0);
-
-    var i: usize = 0;
-    while (i < MAX_INPUT_LEN) : (i += 1) {
+/// Reads characters and prints them until the enter key is
+/// pressed or `buf` is full.
+pub fn readLine(buf: []u8) []u8 {
+    var input_end: usize = undefined;
+    for (buf, 0..) |*byte, i| {
         const char = readByte();
         if (char == '\r') {
             writeStr("\n");
+            input_end = i;
             break;
         }
         writeByte(char);
-        input_buf[i] = char;
+        byte.* = char;
     }
 
-    return input_buf[0..i];
+    return buf[0..input_end];
+}
+
+pub fn flush() void {
+    while (aux.REGISTERS.mu_msr & 0x20 != 0) {}
 }

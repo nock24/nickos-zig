@@ -7,6 +7,7 @@ const shell = @import("shell.zig");
 export fn kernel_main() noreturn {
     serial.init();
     serial.writeStr("\n\nNickOS kernel initializing...\n");
+    serial.flush();
 
     shell.start();
 }

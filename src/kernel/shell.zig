@@ -16,29 +16,21 @@ const ArgParseError = error{
     TooManyArgs,
 };
 
-fn parseCmdArgs(str: []const u8, arg_cnt: usize) ArgParseError![]const []const u8 {
-    if (arg_cnt > MAX_ARG_CNT) return ArgParseError.TooLargeArgCnt;
-
-    var args: [MAX_ARG_CNT][]const u8 = undefined;
-    for (&args) |*arg| {
-        arg.* = "";
-    }
+fn parseCmdArgs(str: []const u8, arg_buf: [][]const u8) ArgParseError!void {
     var arg_idx: usize = 0;
     var arg_start: usize = 0;
 
     for (str, 0..) |char, i| {
         if (char == ' ' or i == str.len - 1) { // end of argument
-            if (arg_idx >= arg_cnt) return ArgParseError.TooManyArgs;
-            if (arg_idx < arg_cnt - 1) return ArgParseError.InsufficientArgs;
+            if (arg_idx >= arg_buf.len) return ArgParseError.TooManyArgs;
+            if (arg_idx < arg_buf.len - 1) return ArgParseError.InsufficientArgs;
 
-            args[arg_idx] = str[arg_start..i];
+            arg_buf[arg_idx] = str[arg_start..i];
             arg_idx += 1;
             arg_start = i + 1;
             continue;
         }
     }
-
-    return args[0..arg_cnt];
 }
 
 const MAX_CMD_NAME_LEN: usize = 7;
@@ -49,7 +41,9 @@ const CmdParseError = error{
 };
 
 fn parseCmd(str: []const u8) CmdParseError!Command {
+    serial.writeStr("before alloc\n");
     var cmd_name_buf: [MAX_CMD_NAME_LEN]u8 = undefined;
+    serial.writeStr("after alloc\n");
     @memset(&cmd_name_buf, 0);
     var cmd_name_len: usize = undefined;
     var no_args: bool = undefined;
@@ -79,7 +73,8 @@ fn parseCmd(str: []const u8) CmdParseError!Command {
         if (args_str.len != 0) return CmdParseError.IncorrectArgs;
         break :blk .os_info;
     } else if (mem.eql(u8, cmd_name, "echo")) blk: {
-        const args = parseCmdArgs(args_str, 1) catch
+        var args: [2][]const u8 = undefined;
+        parseCmdArgs(args_str, &args) catch
             return CmdParseError.IncorrectArgs;
         break :blk .{ .echo = args[0] };
     } else return CmdParseError.InvalidCmd;
@@ -96,7 +91,8 @@ pub fn start() noreturn {
     while (true) {
         serial.writeStr("[guest@nickos] -> ");
 
-        const input = serial.readLine();
+        var buf: [10]u8 = undefined;
+        const input = serial.readLine(&buf);
         const cmd = parseCmd(input) catch |e| {
             switch (e) {
                 CmdParseError.InvalidCmd => serial.writeStr("Invalid command\n"),

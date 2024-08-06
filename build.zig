@@ -1,18 +1,18 @@
 const std = @import("std");
 
-pub fn build(b: *std.Build) void {
+pub fn build(b: *std.Build) !void {
+    const want_gdb = b.option(bool, "gdb", "Build for using gdb with qemu") orelse false;
+
     const target = b.resolveTargetQuery(.{
         .os_tag = .freestanding,
         .cpu_arch = .aarch64,
     });
 
-    const optimize = b.standardOptimizeOption(.{});
-
     const exe = b.addExecutable(.{
         .name = "kernel.elf",
         .root_source_file = b.path("src/kernel/kernel.zig"),
         .target = target,
-        .optimize = optimize,
+        .optimize = .Debug,
     });
 
     const drivers = b.createModule(.{
@@ -59,7 +59,8 @@ pub fn build(b: *std.Build) void {
     flash.dependOn(&eject_sdcard.step);
 
     const qemu = b.step("qemu", "Run the OS in qemu");
-    const run_qemu = b.addSystemCommand(&.{
+    var qemu_args = std.ArrayList([]const u8).init(b.allocator);
+    try qemu_args.appendSlice(&.{
         "qemu-system-aarch64",
         "-m",
         "1G",
@@ -74,6 +75,10 @@ pub fn build(b: *std.Build) void {
         "-serial",
         "stdio",
     });
+    if (want_gdb) {
+        try qemu_args.appendSlice(&.{ "-s", "-S" });
+    }
+    const run_qemu = b.addSystemCommand(try qemu_args.toOwnedSlice());
     run_qemu.step.dependOn(b.getInstallStep());
     qemu.dependOn(&run_qemu.step);
 }
