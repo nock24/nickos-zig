@@ -2,6 +2,8 @@ const std = @import("std");
 const mem = std.mem;
 const drivers = @import("drivers");
 const serial = drivers.serial;
+const kernel = @import("kernel");
+const Buffer = kernel.Buffer;
 
 const Command = union(enum) {
     os_info,
@@ -41,10 +43,7 @@ const CmdParseError = error{
 };
 
 fn parseCmd(str: []const u8) CmdParseError!Command {
-    serial.writeStr("before alloc\n");
-    var cmd_name_buf: [MAX_CMD_NAME_LEN]u8 = undefined;
-    serial.writeStr("after alloc\n");
-    @memset(&cmd_name_buf, 0);
+    var cmd_name_buf = Buffer(MAX_CMD_NAME_LEN).zeroes();
     var cmd_name_len: usize = undefined;
     var no_args: bool = undefined;
     for (str, 0..) |char, i| {
@@ -60,10 +59,10 @@ fn parseCmd(str: []const u8) CmdParseError!Command {
         }
 
         if (i >= MAX_CMD_NAME_LEN) return CmdParseError.InvalidCmd;
-        cmd_name_buf[i] = char;
+        cmd_name_buf.bytes[i] = char;
     }
 
-    const cmd_name = cmd_name_buf[0..cmd_name_len];
+    const cmd_name = cmd_name_buf.bytes[0..cmd_name_len];
     const args_str = if (no_args)
         ""
     else
@@ -91,7 +90,8 @@ pub fn start() noreturn {
     while (true) {
         serial.writeStr("[guest@nickos] -> ");
 
-        var buf: [10]u8 = undefined;
+        var buf: [22]u8 = undefined;
+        @memset(&buf, 0);
         const input = serial.readLine(&buf);
         const cmd = parseCmd(input) catch |e| {
             switch (e) {
